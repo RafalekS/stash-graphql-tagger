@@ -1,0 +1,355 @@
+# Stash GraphQL API Schema - Relevant Types for Python Tagger
+# Extracted from full schema for development reference
+
+# ==========================
+# QUERY TYPES
+# ==========================
+
+type Query {
+  findPerformers(
+    filter: FindFilterType
+    performer_filter: PerformerFilterType
+    performer_ids: [Int!]
+  ): FindPerformersResultType!
+  
+  findStudios(
+    filter: FindFilterType
+    studio_filter: StudioFilterType
+  ): FindStudiosResultType!
+  
+  findScenes(
+    filter: FindFilterType
+    scene_filter: SceneFilterType
+    scene_ids: [Int!]
+  ): FindScenesResultType!
+  
+  findTags(
+    filter: FindFilterType
+    tag_filter: TagFilterType
+  ): FindTagsResultType!
+}
+
+# ==========================
+# MUTATION TYPES
+# ==========================
+
+type Mutation {
+  sceneUpdate(input: SceneUpdateInput!): Scene
+  tagCreate(input: TagCreateInput!): Tag
+  bulkSceneUpdate(input: BulkSceneUpdateInput!): [Scene!]
+}
+
+# ==========================
+# SCENE TYPES
+# ==========================
+
+type Scene {
+  id: ID!
+  title: String
+  code: String
+  details: String
+  director: String
+  url: String
+  urls: [String!]!
+  date: String
+  rating100: Int
+  organized: Boolean!
+  created_at: Time!
+  updated_at: Time!
+  
+  # Relationships
+  files: [VideoFile!]!
+  performers: [Performer!]!
+  tags: [Tag!]!
+  studio: Studio
+  
+  # File metadata
+  file: SceneFileType
+}
+
+type VideoFile {
+  id: ID!
+  path: String!
+  size: Int64!
+  duration: Float!
+  video_codec: String!
+  audio_codec: String
+  width: Int!
+  height: Int!
+  frame_rate: Float!
+  bit_rate: Int!
+}
+
+input SceneUpdateInput {
+  id: ID!
+  title: String
+  code: String
+  details: String
+  director: String
+  url: String
+  urls: [String!]
+  date: String
+  rating100: Int
+  organized: Boolean
+  studio_id: ID
+  performer_ids: [ID!]
+  tag_ids: [ID!]
+}
+
+input BulkSceneUpdateInput {
+  ids: [ID!]
+  title: String
+  code: String
+  details: String
+  director: String
+  url: String
+  urls: BulkUpdateStrings
+  date: String
+  rating100: Int
+  organized: Boolean
+  studio_id: ID
+  performer_ids: BulkUpdateIds
+  tag_ids: BulkUpdateIds
+}
+
+input BulkUpdateIds {
+  ids: [ID!]
+  mode: BulkUpdateIdMode!  # SET, ADD, REMOVE
+}
+
+input BulkUpdateStrings {
+  values: [String!]
+  mode: BulkUpdateIdMode!
+}
+
+enum BulkUpdateIdMode {
+  SET
+  ADD
+  REMOVE
+}
+
+# ==========================
+# PERFORMER TYPES
+# ==========================
+
+type Performer {
+  id: ID!
+  name: String!
+  disambiguation: String
+  url: String
+  urls: [String!]!
+  gender: GenderEnum
+  birthdate: String
+  ethnicity: String
+  country: String
+  eye_color: String
+  height_cm: Int
+  measurements: String
+  fake_tits: String
+  career_length: String
+  tattoos: String
+  piercings: String
+  alias_list: [String!]!
+  favorite: Boolean!
+  rating100: Int
+  tags: [Tag!]!
+  image_path: String
+  scene_count: Int
+}
+
+type FindPerformersResultType {
+  count: Int!
+  performers: [Performer!]!
+}
+
+input PerformerFilterType {
+  name: StringCriterionInput
+  disambiguation: StringCriterionInput
+  gender: GenderCriterionInput
+  birthdate: DateCriterionInput
+  tags: MultiCriterionInput
+  # ... other filters
+}
+
+enum GenderEnum {
+  MALE
+  FEMALE
+  TRANSGENDER_MALE
+  TRANSGENDER_FEMALE
+  INTERSEX
+  NON_BINARY
+}
+
+# ==========================
+# STUDIO TYPES
+# ==========================
+
+type Studio {
+  id: ID!
+  name: String!
+  url: String
+  urls: [String!]!
+  parent_studio: Studio
+  child_studios: [Studio!]!
+  image_path: String
+  scene_count: Int
+  tags: [Tag!]!
+  rating100: Int
+  details: String
+  aliases: [String!]!
+}
+
+type FindStudiosResultType {
+  count: Int!
+  studios: [Studio!]!
+}
+
+input StudioFilterType {
+  name: StringCriterionInput
+  url: StringCriterionInput
+  rating100: IntCriterionInput
+  parent: MultiCriterionInput
+  tags: MultiCriterionInput
+  # ... other filters
+}
+
+# ==========================
+# TAG TYPES
+# ==========================
+
+type Tag {
+  id: ID!
+  name: String!
+  description: String
+  aliases: [String!]!
+  ignore_auto_tag: Boolean!
+  image_path: String
+  scene_count: Int
+  parents: [Tag!]!
+  children: [Tag!]!
+}
+
+type FindTagsResultType {
+  count: Int!
+  tags: [Tag!]!
+}
+
+input TagCreateInput {
+  name: String!
+  description: String
+  aliases: [String!]
+  parent_ids: [ID!]
+  child_ids: [ID!]
+  ignore_auto_tag: Boolean
+}
+
+input TagFilterType {
+  name: StringCriterionInput
+  description: StringCriterionInput
+  aliases: StringCriterionInput
+  scene_count: IntCriterionInput
+  parent_count: IntCriterionInput
+  child_count: IntCriterionInput
+  # ... other filters
+}
+
+# ==========================
+# FILTER INPUT TYPES
+# ==========================
+
+input FindFilterType {
+  q: String
+  page: Int
+  per_page: Int  # use -1 for all results, default 25
+  sort: String
+  direction: SortDirectionEnum
+}
+
+enum SortDirectionEnum {
+  ASC
+  DESC
+}
+
+input SceneFilterType {
+  title: StringCriterionInput
+  code: StringCriterionInput
+  details: StringCriterionInput
+  director: StringCriterionInput
+  url: StringCriterionInput
+  date: DateCriterionInput
+  rating100: IntCriterionInput
+  organized: Boolean
+  
+  # Relationship filters
+  performers: MultiCriterionInput
+  studios: MultiCriterionInput
+  tags: MultiCriterionInput
+  
+  # File property filters
+  resolution: ResolutionEnum
+  duration: IntCriterionInput
+  file_count: IntCriterionInput
+}
+
+input StringCriterionInput {
+  value: String!
+  modifier: CriterionModifier!
+}
+
+input IntCriterionInput {
+  value: Int!
+  value2: Int
+  modifier: CriterionModifier!
+}
+
+input DateCriterionInput {
+  value: String!
+  value2: String
+  modifier: CriterionModifier!
+}
+
+input MultiCriterionInput {
+  value: [ID!]
+  modifier: CriterionModifier!
+  excludes: [ID!]
+}
+
+enum CriterionModifier {
+  EQUALS          # =
+  NOT_EQUALS      # !=
+  GREATER_THAN    # >
+  LESS_THAN       # <
+  IS_NULL         # IS NULL
+  NOT_NULL        # IS NOT NULL
+  INCLUDES_ALL    # INCLUDES ALL
+  INCLUDES        # INCLUDES
+  EXCLUDES        # EXCLUDES
+  MATCHES_REGEX   # MATCHES REGEX
+  NOT_MATCHES_REGEX # NOT MATCHES REGEX
+  BETWEEN         # >= AND <=
+  NOT_BETWEEN     # < OR >
+}
+
+enum ResolutionEnum {
+  VERY_LOW      # 240p
+  LOW           # 360p  
+  R360P         # 360p
+  STANDARD      # 480p
+  WEB_HD        # 720p
+  STANDARD_HD   # 720p
+  FULL_HD       # 1080p
+  QUAD_HD       # 1440p
+  VR_HD         # 1920p
+  FOUR_K        # 4K
+  FIVE_K        # 5K
+  SIX_K         # 6K
+  EIGHT_K       # 8K
+}
+
+# ==========================
+# SCALAR TYPES
+# ==========================
+
+scalar Time      # RFC3339 timestamp
+scalar Int64     # 64-bit integer
+scalar Map       # JSON map/object
